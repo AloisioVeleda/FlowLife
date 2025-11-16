@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowLife - Equilíbrio Pessoal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    /* =======================================================
+       🌿 GLOBAL & VARIÁVEIS
+       ======================================================= */
+    :root {
+      --scroll-behavior: smooth;
+      --accent-green: #4caf50;
+      --accent-blue: #2196F3;
+      --bg-primary: #0f1115;
+      --bg-secondary: #1c2026;
+      --bg-tertiary: #252a31;
+      --text-primary: #f5f5f5;
+      --text-secondary: #bdbdbd;
+      --nav-height: 70px; /* Altura padrão da navegação */
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: var(--scroll-behavior); }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* =======================================================
+       🧭 NAVEGAÇÃO (PADRÃO PARA TODAS AS PÁGINAS)
+       ======================================================= */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height);
+      backdrop-filter: blur(10px); background: rgba(15, 17, 21, 0.85);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3); z-index: 100;
+    }
+    .nav-container {
+      max-width: 1200px; margin: auto; height: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 2rem;
+    }
+    .nav-logo {
+      font-size: 1.5rem; font-weight: 700; color: var(--accent-green);
+      letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+    }
+    .nav-menu { display: flex; gap: 1.5rem; }
+    .nav-menu a {
+      color: #e0e0e0; font-size: 0.95rem; font-weight: 500;
+      position: relative; transition: color 0.3s ease;
+    }
+    .nav-menu a::after {
+      content: ""; position: absolute; width: 0%; height: 2px;
+      bottom: -4px; left: 0; background-color: var(--accent-green);
+      transition: width 0.3s;
+    }
+    .nav-menu a:hover, .nav-menu a.active { color: var(--accent-green); }
+    .nav-menu a:hover::after, .nav-menu a.active::after { width: 100%; }
+
+    /* =======================================================
+       ✨ HERO SECTION (ESPECÍFICO DA HOME)
+       ======================================================= */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center;
+      padding: 0 2rem; position: relative; overflow: hidden;
+      /* Compensação para o conteúdo não ficar atrás da nav */
+      padding-top: var(--nav-height); 
+    }
+    .hero-bg-glow {
+      position: absolute; width: 600px; height: 600px;
+      background: var(--accent-green); filter: blur(200px);
+      opacity: 0.15; top: -20%; right: -10%; z-index: -1;
+      animation: pulse 8s ease-in-out infinite alternate;
+    }
+    .hero-title {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  max-width: 900px;
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+  background-clip: text;            /* Adicionado */
+  -webkit-background-clip: text;
+  color: transparent;               /* Melhor que -webkit-text-fill-color para maior compatibilidade */
+  animation: fadeUp 1s ease forwards;
+}
+
+    .hero-subtitle {
+      font-size: 1.2rem; color: var(--text-secondary);
+      max-width: 700px; margin-bottom: 2.5rem; min-height: 3rem; /* Reserva espaço para digitação */
+      animation: fadeUp 1s ease 0.3s forwards; opacity: 0;
+    }
+    .hero-btn {
+      padding: 1rem 3rem; font-size: 1.1rem; font-weight: 600;
+      border: none; border-radius: 50px; cursor: pointer;
+      background: linear-gradient(90deg, var(--accent-green), #66bb6a);
+      color: #fff; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 1s ease 0.6s forwards; opacity: 0;
+    }
+    .hero-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(76, 175, 80, 0.5); }
+
+    /* =======================================================
+       ℹ️ SEÇÃO DE INFORMAÇÕES
+       ======================================================= */
+    .info-section {
+      padding: 80px 24px; background: var(--bg-secondary); text-align: center;
+    }
+    .section-title { font-size: 2rem; margin-bottom: 1rem; color: var(--text-primary); }
+    .section-desc { color: var(--text-secondary); max-width: 600px; margin: 0 auto 48px; }
+    
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px; max-width: 1200px; margin: 0 auto;
+    }
+    .info-card {
+      background: var(--bg-tertiary); padding: 40px 30px; border-radius: 20px;
+      text-align: left; transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid transparent;
+    }
+    .info-card:hover {
+      transform: translateY(-10px); border-color: rgba(76, 175, 80, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .info-card i { font-size: 2.5rem; color: var(--accent-green); margin-bottom: 20px; display: block; }
+    .info-card h4 { font-size: 1.4rem; margin-bottom: 12px; }
+    .info-card p { color: var(--text-secondary); line-height: 1.6; }
+
+    /* =======================================================
+       🦶 FOOTER (PADRÃO)
+       ======================================================= */
+    footer {
+      background: #0a0c0e; padding: 30px; text-align: center;
+      color: var(--text-secondary); font-size: 0.9rem;
+      border-top: 1px solid #222;
+    }
+
+    /* =======================================================
+       🎬 ANIMAÇÕES
+       ======================================================= */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { opacity: 0.15; transform: scale(1); } 100% { opacity: 0.25; transform: scale(1.1); } }
+
+    /* =======================================================
+       📱 RESPONSIVO
+       ======================================================= */
+    @media (max-width: 768px) {
+      .nav-menu { display: none; } /* Para simplificar por enquanto */
+      .hero-title { font-size: 2.8rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAV PADRONIZADA -->
+  <nav>
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <i class="fas fa-leaf"></i> FlowLife
+      </a>
+      <div class="nav-menu">
+        <!-- Links internos do app -->
+        <a href="dashboard.html">Dashboard</a>
+        <a href="agenda.html">Agenda</a>
+        <a href="financas.html">Finanças</a>
+        <a href="nutricao.html">Nutrição</a>
+        <!-- Perfil por último -->
+        <a href="perfil.html"><i class="far fa-user-circle"></i> Perfil</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <main class="hero">
+    <div class="hero-bg-glow"></div>
+    <h1 class="hero-title">Seu equilíbrio pessoal,<br>simplificado.</h1>
+    <!-- Subtítulo com ID para efeito de digitação -->
+    <p class="hero-subtitle" id="typing-text"></p>
+    <button id="start-btn" class="hero-btn">Começar Jornada</button>
+  </main>
+
+  <!-- INFO SECTION -->
+  <section class="info-section" id="como-funciona">
+    <h2 class="section-title">Pilares do seu Bem-Estar</h2>
+    <p class="section-desc">O FlowLife conecta as áreas mais importantes da sua vida em um único lugar inteligente.</p>
+    
+    <div class="cards-grid">
+      <div class="info-card">
+        <i class="fas fa-heartbeat"></i>
+        <h4>Saúde & Corpo</h4>
+        <p>Monitore seu sono, atividades e nutrição com metas adaptáveis que respeitam seu ritmo.</p>
+      </div>
+      <div class="info-card">
+        <i class="fas fa-wallet"></i>
+        <h4>Finanças Claras</h4>
+        <p>Organize seus gastos e ganhos sem planilhas complicadas. Saiba exatamente para onde seu dinheiro vai.</p>
+      </div>
+      <div class="info-card">
+        <i class="fas fa-calendar-check"></i>
+        <h4>Rotina Produtiva</h4>
+        <p>Uma agenda que prioriza o que importa, ajudando você a encontrar tempo para si mesmo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER PADRONIZADO -->
+  <footer>
+    © <span id="year"></span> FlowLife. Feito com propóstio.
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Ano do Footer (Automático)
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // 2. Highlight do Menu Ativo (Lógica Global)
+      // Verifica a URL atual e adiciona a classe 'active' ao link correspondente
+      const currentPage = window.location.pathname.split("/").pop() || 'index.html';
+      document.querySelectorAll('.nav-menu a').forEach(link => {
+        if (link.getAttribute('href') === currentPage) {
+          link.classList.add('active');
+        }
+      });
+
+      // 3. Efeito de Digitação (Typewriter)
+      const text = "Otimize sua saúde, domine suas finanças e organize sua rotina. Tudo em perfeita sincronia.";
+      const typingElement = document.getElementById('typing-text');
+      let i = 0;
+      function typeWriter() {
+        if (i < text.length) {
+          typingElement.textContent += text.charAt(i);
+          i++;
+          setTimeout(typeWriter, 30); // Velocidade da digitação
+        }
+      }
+      // Inicia a digitação após um pequeno delay para a animação de fade terminar
+      setTimeout(typeWriter, 500);
+
+      // 4. Lógica do Botão Iniciar (Simulada para Front-end)
+      const startBtn = document.getElementById("start-btn");
+      // Simula verificação de login/plano
+      const hasPlan = localStorage.getItem('flowlife_plan'); 
+      if (hasPlan) {
+          startBtn.textContent = "Ir para meu Dashboard";
+          startBtn.onclick = () => window.location.href = "dashboard.html";
+      } else {
+          startBtn.textContent = "Criar meu Plano Grátis";
+          startBtn.onclick = () => window.location.href = "quiz.html";
+      }
+    });
+  </script>
+</body>
+</html>

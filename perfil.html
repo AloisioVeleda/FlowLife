@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>FlowLife — Crie seu Perfil</title>
+    
+    <!-- FIREBASE AND AUTH GUARD -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="auth-guard.js"></script>
+
+    <style>
+        :root { --scroll-behavior: smooth; --nav-height: 64px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f1115;
+            color: #f5f5f5;
+            overflow-x: hidden;
+            scroll-behavior: var(--scroll-behavior);
+            padding-top: var(--nav-height);
+        }
+        a { text-decoration: none; color: inherit; }
+
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height);
+            backdrop-filter: blur(10px); background: rgba(15,17,21,0.85);
+            box-shadow: 0 1px 8px rgba(0,0,0,0.3); z-index: 100;
+        }
+        .nav-container {
+            max-width: 1200px; margin: auto; display: flex;
+            justify-content: space-between; align-items: center; padding: 1rem 2rem;
+        }
+        .nav-logo { font-size: 1.8rem; font-weight: 700; color: #4caf50; letter-spacing: 1px; }
+
+        main {
+            padding: 30px 20px;
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: calc(100vh - var(--nav-height));
+        }
+        .container {
+            width: 100%; max-width: 650px; background: #1c2026; border-radius: 16px;
+            padding: 28px; box-shadow: 0 8px 35px rgba(0,0,0,0.4);
+        }
+        h2 { margin-bottom: 4px; }
+        p.lead { color: #bdbdbd; margin-bottom: 24px; }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .profile-title { display: flex; flex-direction: column; gap: 6px; }
+        .profile-right { display: flex; align-items: center; gap: 12px; }
+        .avatar-wrapper {
+            position: relative; width: 72px; height: 72px; border-radius: 50%;
+            overflow: hidden; border: 2px solid #2f3640; background: #252a31; flex-shrink: 0;
+        }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .avatar-placeholder {
+            width: 100%; height: 100%; display: grid; place-items: center;
+            color: #95a5a6; font-size: 28px; user-select: none;
+        }
+        .upload-controls { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+        .btn-secondary {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #3a414a;
+            background: #252a31; color: #f5f5f5; cursor: pointer; font-size: 0.9rem;
+        }
+        .btn-secondary:hover { background: #2b313a; }
+
+        .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .form-group { margin-bottom: 16px; flex-grow: 1; min-width: 0; }
+        .form-group label {
+            display: block; color: #bdbdbd; margin-bottom: 6px; font-size: 0.95rem; font-weight: 500;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            background: #252a31; color: #f5f5f5; font-size: 1rem; font-family: 'Poppins', sans-serif;
+            appearance: none; -webkit-appearance: none;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group input[readonly] { cursor: default; background: #333941; color: #ccc; }
+        
+        button.primary { width: 100%; padding: 14px 18px; border-radius: 10px; border: none;
+            cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.2s;
+            background: #4caf50; color: #fff; margin-top: 10px; }
+        button.primary:hover { background: #43a047; transform: scale(1.02); }
+
+        #notification {
+            position: fixed; bottom: 20px; right: 20px; background-color: #e53935; color: white;
+            padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0; transition: opacity 0.3s ease-in-out; z-index: 1000;
+        }
+        #notification.show { opacity: 1; }
+
+        @media (max-width: 520px) {
+            .avatar-wrapper { width: 64px; height: 64px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">FlowLife</a>
+    </div>
+</nav>
+
+<main>
+    <div class="container">
+        <div class="profile-header">
+            <div class="profile-title">
+                <h2>👤 Meu Perfil</h2>
+                <p class="lead">Adicione sua foto de perfil e complete seus dados.</p>
+            </div>
+
+            <div class="profile-right">
+                <div class="avatar-wrapper" id="avatarWrapper">
+                    <img id="avatarImg" class="avatar-img" alt="Foto do perfil">
+                    <div id="avatarPlaceholder" class="avatar-placeholder">👤</div>
+                </div>
+                <div class="upload-controls">
+                    <label class="btn-secondary" for="fotoInput">Adicionar foto de perfil</label>
+                    <input id="fotoInput" type="file" accept="image/*" style="display:none;">
+                </div>
+            </div>
+        </div>
+
+        <form id="profile-form">
+            <div class="form-group">
+                <label for="nome">Nome Completo</label>
+                <input type="text" id="nome" placeholder="Seu nome" required>
+            </div>
+            <div class="form-group">
+                <label for="email">E-mail (Seu ID de Usuário)</label>
+                <input type="email" id="email" placeholder="Seu email" readonly>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="idade-range">Faixa Etária</label>
+                    <select id="idade-range" required>
+                        <option value="" disabled selected>Selecione</option>
+                        <option value="13-17">13-17 anos</option>
+                        <option value="18-24">18-24 anos</option>
+                        <option value="25-34">25-34 anos</option>
+                        <option value="35-44">35-44 anos</option>
+                        <option value="45-54">45-54 anos</option>
+                        <option value="55+">55+ anos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="genero">Gênero</label>
+                    <select id="genero" required>
+                        <option value="" disabled selected>Selecione</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="feminino">Feminino</option>
+                        <option value="outro">Outro/Prefiro não dizer</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="altura">Altura (cm)</label>
+                    <input type="number" id="altura" placeholder="Ex: 175" min="50" max="250" required>
+                </div>
+                <div class="form-group">
+                    <label for="peso">Peso (kg)</label>
+                    <input type="number" id="peso" placeholder="Ex: 70.5" min="10" step="0.1" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="atividade">Nível de Atividade Física Semanal</label>
+                <select id="atividade" required>
+                    <option value="" disabled selected>Selecione seu nível</option>
+                    <option value="sedentario">Sedentário (Pouco ou nenhum exercício)</option>
+                    <option value="leve">Leve (1-3 dias/semana)</option>
+                    <option value="moderado">Moderado (3-5 dias/semana)</option>
+                    <option value="alto">Alto (6-7 dias/semana)</option>
+                    <option value="atleta">Atleta (2x/dia, treinos intensos)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="limitacoes">Você possui alguma limitação física ou restrição?</label>
+                <textarea id="limitacoes" placeholder="Ex: Restrição alimentar a glúten, lesão no joelho esquerdo, etc. (Opcional)"></textarea>
+            </div>
+            
+            <button type="submit" class="primary">Salvar Perfil e Começar Questionário</button>
+        </form>
+    </div>
+</main>
+
+<div id="notification"></div>
+
+<script>
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    let userId = null;
+
+    const DOM = {
+        form: document.getElementById('profile-form'),
+        nome: document.getElementById('nome'),
+        email: document.getElementById('email'),
+        idadeRange: document.getElementById('idade-range'),
+        genero: document.getElementById('genero'),
+        altura: document.getElementById('altura'),
+        peso: document.getElementById('peso'),
+        atividade: document.getElementById('atividade'),
+        limitacoes: document.getElementById('limitacoes'),
+        notification: document.getElementById('notification'),
+        fotoInput: document.getElementById('fotoInput'),
+        avatarImg: document.getElementById('avatarImg'),
+        avatarPlaceholder: document.getElementById('avatarPlaceholder'),
+    };
+
+    const PROFILE_DOC_PATH = (uid) => `artifacts/${appId}/users/${uid}/profile/basic`;
+    const PROFILE_PHOTO_PATH = (uid) => `artifacts/${appId}/users/${uid}/profile/photo.jpg`;
+
+    function showNotification(message, type = 'error') {
+        DOM.notification.textContent = message;
+        DOM.notification.style.backgroundColor =
+          type === 'success' ? '#4caf50' : type === 'info' ? '#ffa000' : '#e53935';
+        DOM.notification.classList.add('show');
+        console.log(`[FlowLife Notificação ${type.toUpperCase()}]: ${message}`);
+        setTimeout(() => {
+            DOM.notification.classList.remove('show');
+        }, 3000);
+    }
+
+    function previewLocalPhoto(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            DOM.avatarImg.src = e.target.result;
+            DOM.avatarImg.style.display = 'block';
+            DOM.avatarPlaceholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function uploadProfilePhoto(file) {
+        console.log('Iniciando upload da foto...');
+        const storageRef = firebase.storage().ref().child(PROFILE_PHOTO_PATH(userId));
+        const metadata = { contentType: file.type || 'image/jpeg', cacheControl: 'public,max-age=3600' };
+        const snap = await storageRef.put(file, metadata);
+        console.log('Upload concluído', snap.metadata.fullPath);
+        const url = await storageRef.getDownloadURL();
+        console.log('DownloadURL obtida', url);
+        return url;
+    }
+
+    async function loadProfile() {
+        if (!userId) return;
+
+        try {
+            console.log('Carregando perfil de', PROFILE_DOC_PATH(userId));
+            const docRef = firebase.firestore().doc(PROFILE_DOC_PATH(userId));
+            const docSnap = await docRef.get();
+
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                console.log('Perfil carregado:', data);
+                DOM.nome.value = data.nome || '';
+                DOM.idadeRange.value = data.idadeRange || '';
+                DOM.genero.value = data.genero || '';
+                DOM.altura.value = data.altura || '';
+                DOM.peso.value = data.peso || '';
+                DOM.atividade.value = data.atividade || '';
+                DOM.limitacoes.value = data.limitacoes || '';
+
+                if (data.fotoURL) {
+                    DOM.avatarImg.src = data.fotoURL;
+                    DOM.avatarImg.style.display = 'block';
+                    DOM.avatarPlaceholder.style.display = 'none';
+                } else {
+                    DOM.avatarImg.style.display = 'none';
+                    DOM.avatarPlaceholder.style.display = 'grid';
+                }
+
+                showNotification('Perfil carregado com sucesso!', 'success');
+            } else {
+                console.log('Nenhum perfil existente encontrado no Firestore.');
+            }
+        } catch (error) {
+            showNotification(`Erro ao carregar perfil: ${error.message}`);
+            console.error('Erro ao carregar perfil:', error);
+        }
+    }
+
+    async function saveProfile(profileData) {
+        if (!userId) {
+            showNotification('Usuário não autenticado. Tente recarregar a página.', 'error');
+            return;
+        }
+        try {
+            const docRef = firebase.firestore().doc(PROFILE_DOC_PATH(userId));
+            await docRef.set(profileData, { merge: true });
+            showNotification('Perfil salvo! Redirecionando...', 'success');
+            console.log('Documento salvo. Iniciando redirect para quiz.html');
+            setTimeout(() => {
+                try {
+                    window.location.href = 'quiz.html';
+                } catch (e) {
+                    console.error('Falha no redirect:', e);
+                }
+            }, 800);
+        } catch (error) {
+            showNotification(`Erro ao salvar perfil: ${error.message}`);
+            console.error('Erro ao salvar perfil:', error);
+        }
+    }
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+        console.log('onAuthStateChanged:', user ? user.uid : 'sem usuário');
+        if (user) {
+            userId = user.uid;
+            DOM.email.value = user.email || 'Usuário Anônimo';
+            // Teste rápido de acesso aos serviços
+            try { firebase.firestore(); console.log('Firestore OK'); } catch(e){ console.error('Firestore init erro', e); }
+            try { firebase.storage(); console.log('Storage OK'); } catch(e){ console.error('Storage init erro', e); }
+            await loadProfile();
+        }
+    });
+
+    DOM.fotoInput.addEventListener('change', () => {
+        const file = DOM.fotoInput.files && DOM.fotoInput.files[0];
+        if (!file) return;
+
+        const maxSizeMB = 5;
+        if (file.size > maxSizeMB * 1024 * 1024) {
+            showNotification(`A imagem excede ${maxSizeMB}MB. Escolha uma menor.`, 'error');
+            DOM.fotoInput.value = '';
+            return;
+        }
+        previewLocalPhoto(file);
+    });
+
+    DOM.form.addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+
+        console.log('Submit acionado. Valores atuais:', {
+            nome: DOM.nome.value, idadeRange: DOM.idadeRange.value, genero: DOM.genero.value,
+            altura: DOM.altura.value, peso: DOM.peso.value, atividade: DOM.atividade.value
+        });
+
+        if (!DOM.nome.value.trim() || !DOM.idadeRange.value || !DOM.genero.value || !DOM.altura.value || !DOM.peso.value || !DOM.atividade.value) {
+            showNotification('Por favor, preencha todos os campos obrigatórios (Nome, Faixa Etária, Gênero, Altura, Peso, Nível de Atividade).');
+            return;
+        }
+
+        const profileData = {
+            nome: DOM.nome.value.trim(),
+            email: DOM.email.value,
+            idadeRange: DOM.idadeRange.value,
+            genero: DOM.genero.value,
+            altura: parseFloat(DOM.altura.value),
+            peso: parseFloat(DOM.peso.value),
+            atividade: DOM.atividade.value,
+            limitacoes: DOM.limitacoes.value.trim(),
+            ultimaAtualizacao: new Date().toISOString()
+        };
+
+        const newFile = DOM.fotoInput.files && DOM.fotoInput.files[0];
+
+        try {
+            if (newFile) {
+                showNotification('Enviando foto do perfil...', 'info');
+                try {
+                    const fotoURL = await uploadProfilePhoto(newFile);
+                    profileData.fotoURL = fotoURL;
+                } catch (uploadErr) {
+                    console.error('Erro no upload da foto:', uploadErr);
+                    showNotification('Não foi possível enviar a foto. Vou salvar seus dados mesmo assim.', 'error');
+                    // Prossegue sem foto
+                }
+            }
+
+            await saveProfile(profileData);
+        } catch (error) {
+            showNotification(`Erro ao enviar/salvar: ${error.message}`);
+            console.error('Erro no upload/salvamento:', error);
+        }
+    });
+</script>
+</body>
+</html>

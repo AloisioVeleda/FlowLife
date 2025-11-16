@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FlowLife — Questionário</title>
+
+  
+
+  <style>
+    body { 
+        font-family: 'Poppins', sans-serif; background-color: #0f1115; color: #f5f5f5;
+        margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; 
+    }
+    .quiz-container { 
+        width: 95%; max-width: 680px; background: #1c2026; padding: 28px;
+        border-radius: 16px; box-shadow: 0 8px 35px rgba(0, 0, 0, 0.4); text-align: center;
+    }
+    #question-area { transition: opacity 0.3s ease-out; }
+    .progress-bar { 
+        width: 100%; height: 10px; background: #333; border-radius: 6px; 
+        overflow: hidden; margin-bottom: 18px; 
+    }
+    .progress { height: 100%; width: 0%; background: #4caf50; transition: width .3s ease; }
+    .question { font-size: 1.15rem; margin-bottom: 14px; color: #f5f5f5; }
+    .options { display: flex; flex-direction: column; gap: 10px; margin: 0 auto; max-width: 520px; }
+    
+    button.option { 
+        border: 1px solid #444; background: transparent; color: #e0e0e0; padding: 12px 14px; 
+        border-radius: 10px; cursor: pointer; font-size: 1rem;
+        transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    button.option:hover { background: #2a313a; border-color: #555; }
+    button.option.selected { 
+        background: #4caf50; color: #fff; border-color: #4caf50; transform: scale(1.02);
+    }
+    .nav { display: flex; justify-content: space-between; margin-top: 18px; gap: 8px; }
+    .nav button { 
+        padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer;
+        background: #4caf50; color: #fff; position: relative; transition: background .2s;
+    }
+    .nav button.secondary { background: #333; color: #e0e0e0; }
+    .nav button:disabled { background: #555; cursor: not-allowed; }
+    .nav button.loading::after {
+        content: ''; position: absolute; width: 16px; height: 16px; top: 0; left: 0; right: 0;
+        bottom: 0; margin: auto; border: 2px solid transparent; border-top-color: #fff;
+        border-radius: 50%; animation: loader .8s ease infinite;
+    }
+    @keyframes loader { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h2>Descobrindo seu Equilíbrio</h2>
+    <p style="color:#bdbdbd; margin-top:-5px; margin-bottom: 15px;">Responda para gerar seu plano personalizado.</p>
+    <div class="progress-bar"><div id="progress" class="progress"></div></div>
+    <div id="question-area"></div>
+    <div class="nav">
+      <button id="prevBtn" class="secondary">Voltar</button>
+      <button id="nextBtn">Próximo</button>
+    </div>
+  </div>
+
+  <script>
+  // ================================
+  // 🔹 Perguntas (Sem alteração)
+  // ================================
+  const questions = [
+    { question: "Qual área da sua vida você sente que precisa equilibrar mais?", options: [{ label: "Saúde física", scores: { saude: 2, financas: 0, organizacao: 0 } }, { label: "Finanças pessoais", scores: { saude: 0, financas: 2, organizacao: 0 } }, { label: "Organização e rotina", scores: { saude: 0, financas: 0, organizacao: 2 } }] },
+    { question: "Quantas horas você costuma dormir por noite?", options: [{ label: "Menos de 6h", scores: { saude: 2, financas: 0, organizacao: 0 } }, { label: "6 a 8h", scores: { saude: 1, financas: 0, organizacao: 0 } }, { label: "Mais de 8h", scores: { saude: 0, financas: 0, organizacao: 0 } }] },
+    { question: "Como você descreveria sua situação financeira atual?", options: [{ label: "Desorganizada", scores: { saude: 0, financas: 2, organizacao: 0 } }, { label: "Razoável", scores: { saude: 0, financas: 1, organizacao: 0 } }, { label: "Equilibrada", scores: { saude: 0, financas: 0, organizacao: 0 } }] },
+    { question: "Você costuma planejar suas tarefas diárias?", options: [{ label: "Nunca", scores: { saude: 0, financas: 0, organizacao: 2 } }, { label: "Às vezes", scores: { saude: 0, financas: 0, organizacao: 1 } }, { label: "Sempre", scores: { saude: 0, financas: 0, organizacao: 0 } }] },
+    { question: "Qual é o seu principal objetivo para os próximos 3 meses?", options: [{ label: "Melhorar a saúde", scores: { saude: 2, financas: 0, organizacao: 0 } }, { label: "Economizar dinheiro", scores: { saude: 0, financas: 2, organizacao: 0 } }, { label: "Ter mais tempo livre", scores: { saude: 0, financas: 0, organizacao: 2 } }] }
+  ];
+
+  let current = 0;
+  let selectedAnswers = [];
+
+  const dom = {
+    qArea: document.getElementById('question-area'),
+    progressBar: document.getElementById('progress'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn')
+  };
+
+  // ================================
+  // 🔹 Salvar progresso local
+  // ================================
+  function saveQuizProgress() {
+    // Salva o progresso parcial no localStorage
+    localStorage.setItem('flowlife_quiz_progress', JSON.stringify({ selectedAnswers, current }));
+  }
+
+  function fetchQuizProgress() {
+    // Busca o progresso parcial do localStorage
+    const progress = JSON.parse(localStorage.getItem('flowlife_quiz_progress'));
+    if (progress) {
+      selectedAnswers = progress.selectedAnswers || [];
+      current = progress.current || 0;
+    }
+  }
+
+  // ================================
+  // 🔹 Renderizar perguntas (Sem alteração)
+  // ================================
+  function renderQuestion(index) {
+    const q = questions[index];
+    dom.qArea.style.opacity = 0;
+    setTimeout(() => {
+      dom.qArea.innerHTML = `
+        <div class="question">${q.question}</div>
+        <div class="options">${q.options.map((opt, i) => `<button class="option" data-index="${i}">${opt.label}</button>`).join('')}</div>
+      `;
+      updateControls(index);
+      attachOptionListeners(index);
+      dom.qArea.style.opacity = 1;
+    }, 300);
+  }
+
+  function updateControls(index) {
+    dom.progressBar.style.width = `${((index + 1)/questions.length)*100}%`;
+    dom.prevBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
+    dom.nextBtn.textContent = index === questions.length - 1 ? 'Gerar meu plano' : 'Próximo';
+    dom.nextBtn.disabled = !selectedAnswers[index];
+  }
+
+  function attachOptionListeners(qIndex) {
+    const optionButtons = dom.qArea.querySelectorAll('.option');
+    if (selectedAnswers[qIndex]) optionButtons[selectedAnswers[qIndex].selectedIndex]?.classList.add('selected');
+
+    dom.qArea.querySelector('.options').addEventListener('click', (event) => {
+      const btn = event.target.closest('.option');
+      if (!btn) return;
+
+      const optIndex = parseInt(btn.dataset.index);
+      optionButtons.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      selectedAnswers[qIndex] = { ...questions[qIndex].options[optIndex], selectedIndex: optIndex };
+      dom.nextBtn.disabled = false;
+      saveQuizProgress(); // Salva a cada clique
+    });
+  }
+
+  // ================================
+  // 🔹 Navegação (Sem alteração)
+  // ================================
+  function handleNext() {
+    if (current < questions.length - 1) {
+      current++;
+      renderQuestion(current);
+      saveQuizProgress();
+    } else {
+      finalizeAndGoToPlan();
+    }
+  }
+
+  dom.nextBtn.addEventListener('click', handleNext);
+  dom.prevBtn.addEventListener('click', () => {
+    if (current > 0) {
+      current--;
+      renderQuestion(current);
+      saveQuizProgress();
+    }
+  });
+
+  // ================================
+  // 🔹 Finalizar e salvar plano (MODIFICADO)
+  // ================================
+  function finalizeAndGoToPlan() {
+    const totals = { saude:0, financas:0, organizacao:0 };
+    selectedAnswers.forEach(ans => {
+      if(ans?.scores){
+        totals.saude += ans.scores.saude || 0;
+        totals.financas += ans.scores.financas || 0;
+        totals.organizacao += ans.scores.organizacao || 0;
+      }
+    });
+
+    // Salva o plano final no localStorage
+    localStorage.setItem('flowlife_plan', JSON.stringify({
+      selectedAnswers,
+      totals,
+      generatedAt: new Date().toISOString()
+    }));
+
+    // Remove progresso parcial
+    localStorage.removeItem('flowlife_quiz_progress');
+
+    dom.nextBtn.textContent = '';
+    dom.nextBtn.classList.add('loading');
+    setTimeout(()=> window.location.href='plano.html', 1200);
+  }
+
+  // ================================
+  // 🔹 Inicializar quiz
+  // ================================
+  function init() {
+    fetchQuizProgress();
+    renderQuestion(current);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

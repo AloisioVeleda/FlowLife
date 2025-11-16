@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowLife — Dashboard</title>
+    
+    <!-- Scripts do Firebase (Mantenha se já estiver usando, ou remova se for só frontend puro por enquanto) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- <script src="auth-guard.js"></script> -->
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        /* =======================================================
+           🌿 GLOBAL & VARIÁVEIS (PADRÃO)
+           ======================================================= */
+        :root {
+            --scroll-behavior: smooth;
+            --accent-green: #4caf50;
+            --accent-blue: #2196F3;
+            --accent-yellow: #FFC107;
+            --accent-red: #e53935;
+            --bg-primary: #0f1115;
+            --bg-secondary: #1c2026;
+            --bg-tertiary: #252a31;
+            --text-primary: #f5f5f5;
+            --text-secondary: #bdbdbd;
+            --nav-height: 70px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding-top: var(--nav-height); /* Espaço para nav fixa */
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* =======================================================
+           🧭 NAVEGAÇÃO (PADRÃO)
+           ======================================================= */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height);
+            backdrop-filter: blur(10px); background: rgba(15, 17, 21, 0.85);
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3); z-index: 100;
+        }
+        .nav-container {
+            max-width: 1200px; margin: auto; height: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 2rem;
+        }
+        .nav-logo {
+            font-size: 1.5rem; font-weight: 700; color: var(--accent-green);
+            letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-menu { display: flex; gap: 1.5rem; }
+        .nav-menu a {
+            color: #e0e0e0; font-size: 0.95rem; font-weight: 500;
+            position: relative; transition: color 0.3s ease;
+        }
+        .nav-menu a::after {
+            content: ""; position: absolute; width: 0%; height: 2px;
+            bottom: -4px; left: 0; background-color: var(--accent-green);
+            transition: width 0.3s;
+        }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--accent-green); }
+        .nav-menu a:hover::after, .nav-menu a.active::after { width: 100%; }
+
+        /* =======================================================
+           📊 DASHBOARD GRID & WIDGETS
+           ======================================================= */
+        main { flex-grow: 1; }
+        .dashboard-header {
+            max-width: 1200px; margin: 40px auto 24px; padding: 0 24px;
+            animation: fadeIn 0.8s ease-out;
+        }
+        .dashboard-header h1 { font-size: 2rem; font-weight: 600; }
+        .date-display { color: var(--text-secondary); font-size: 1rem; margin-top: 5px; text-transform: capitalize; }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px; max-width: 1200px; margin: 0 auto 60px; padding: 0 24px;
+        }
+
+        .widget {
+            background: var(--bg-secondary); padding: 28px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex; flex-direction: column;
+            animation: fadeUp 0.6s ease-out forwards;
+            opacity: 0; /* Começa invisível para animação */
+        }
+        /* Delays para efeito cascata */
+        .widget:nth-child(1) { animation-delay: 0.1s; }
+        .widget:nth-child(2) { animation-delay: 0.2s; }
+        .widget:nth-child(3) { animation-delay: 0.3s; }
+        .widget:nth-child(4) { animation-delay: 0.4s; }
+
+        .widget-title {
+            font-size: 1.3rem; font-weight: 600; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px; color: var(--text-primary);
+        }
+        .widget-content { flex-grow: 1; }
+
+        /* Widget Específico: Foco */
+        .widget.foco { background: linear-gradient(145deg, var(--bg-secondary), #2a313a); }
+        .foco-highlight { font-size: 1.6rem; color: var(--accent-green); font-weight: 700; margin-bottom: 10px; }
+        .foco-desc { color: var(--text-secondary); line-height: 1.5; }
+
+        /* Widget Específico: Agenda */
+        .task-list { list-style: none; padding: 0; }
+        .task-item {
+            display: flex; align-items: center; gap: 15px; padding: 12px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+        .task-time { font-weight: 600; color: var(--accent-yellow); font-size: 0.9rem; min-width: 50px; }
+        .task-name { flex-grow: 1; }
+
+        /* Widget Específico: Finanças */
+        .finance-summary { display: flex; justify-content: space-between; text-align: center; margin-top: 15px; }
+        .finance-item { flex: 1; padding: 15px; background: var(--bg-tertiary); border-radius: 12px; margin: 0 5px; }
+        .finance-val { font-size: 1.4rem; font-weight: 600; margin-bottom: 5px; }
+        .finance-val.income { color: var(--accent-green); }
+        .finance-val.expense { color: var(--accent-red); }
+        .finance-label { font-size: 0.85rem; color: var(--text-secondary); }
+        .finance-balance { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--bg-tertiary); }
+
+        /* Widget Específico: Humor Check-in */
+        .mood-container { text-align: center; padding: 10px 0; }
+        .mood-options { display: flex; justify-content: center; gap: 20px; margin-top: 25px; }
+        .mood-btn {
+            font-size: 2.8rem; background: transparent; border: none; cursor: pointer;
+            transition: transform 0.2s, filter 0.2s; opacity: 0.7;
+        }
+        .mood-btn:hover { transform: scale(1.15); opacity: 1; }
+        .mood-btn.selected { transform: scale(1.25); opacity: 1; filter: drop-shadow(0 0 15px rgba(255,255,255,0.4)); }
+
+        /* Estados Vazios */
+        .empty-state {
+            text-align: center; color: var(--text-secondary); padding: 30px 0;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+        .empty-btn {
+            padding: 8px 16px; background: var(--bg-tertiary); color: var(--accent-green);
+            border-radius: 50px; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; text-decoration: none; display: inline-block;
+        }
+        .empty-btn:hover { background: var(--accent-green); color: var(--bg-primary); }
+
+        /* =======================================================
+           🦶 FOOTER (PADRÃO)
+           ======================================================= */
+        footer {
+            background: #0a0c0e; padding: 30px; text-align: center;
+            color: var(--text-secondary); font-size: 0.9rem;
+            border-top: 1px solid #222; margin-top: auto;
+        }
+
+        /* =======================================================
+           🎬 ANIMAÇÕES
+           ======================================================= */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* =======================================================
+           📱 RESPONSIVO
+           ======================================================= */
+        @media (max-width: 768px) {
+            .nav-menu { display: none; } /* Simplificação mobile */
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .finance-summary { flex-direction: column; gap: 10px; }
+            .finance-item { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAV PADRONIZADA -->
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo"><i class="fas fa-leaf"></i> FlowLife</a>
+            <div class="nav-menu">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="agenda.html">Agenda</a>
+                <a href="financas.html">Finanças</a>
+                <a href="nutricao.html">Nutrição</a>
+                <a href="perfil.html"><i class="far fa-user-circle"></i> Perfil</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- HEADER DO DASHBOARD -->
+        <header class="dashboard-header">
+            <h1 id="greeting">Olá!</h1>
+            <p class="date-display" id="current-date">Carregando data...</p>
+        </header>
+
+        <!-- GRID DE WIDGETS -->
+        <div class="dashboard-grid">
+            <!-- WIDGET 1: FOCO -->
+            <div class="widget foco">
+                <h2 class="widget-title"><i class="fas fa-bullseye" style="color: var(--accent-green)"></i> Foco do Dia</h2>
+                <div class="widget-content" id="foco-content">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- WIDGET 2: AGENDA -->
+            <div class="widget agenda">
+                <h2 class="widget-title"><i class="far fa-calendar-alt" style="color: var(--accent-yellow)"></i> Agenda Hoje</h2>
+                <div class="widget-content" id="agenda-content">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- WIDGET 3: FINANÇAS -->
+            <div class="widget financas">
+                <h2 class="widget-title"><i class="fas fa-wallet" style="color: var(--accent-blue)"></i> Finanças Mês</h2>
+                <div class="widget-content" id="financas-content">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- WIDGET 4: HUMOR -->
+            <div class="widget checkin">
+                <h2 class="widget-title"><i class="fas fa-smile-beam" style="color: #FF9800"></i> Check-in Diário</h2>
+                <div class="widget-content mood-container">
+                    <p style="color: var(--text-secondary);">Como você está se sentindo agora?</p>
+                    <div class="mood-options">
+                        <button class="mood-btn" data-mood="feliz" title="Feliz">😁</button>
+                        <button class="mood-btn" data-mood="normal" title="Normal">😐</button>
+                        <button class="mood-btn" data-mood="cansado" title="Cansado">😴</button>
+                        <button class="mood-btn" data-mood="triste" title="Triste">😔</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER PADRONIZADO -->
+    <footer>
+        © <span id="year"></span> FlowLife.
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. FUNÇÕES GLOBAIS DE UI (Padronização) ---
+        document.getElementById("year").textContent = new Date().getFullYear();
+        // Highlight Menu Ativo
+        const currentPage = window.location.pathname.split("/").pop() || 'dashboard.html';
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            if (link.getAttribute('href') === currentPage) link.classList.add('active');
+        });
+
+        // --- 2. SAUDAÇÃO INTELIGENTE ---
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = "Olá";
+            if (hour >= 5 && hour < 12) greeting = "Bom dia";
+            else if (hour >= 12 && hour < 18) greeting = "Boa tarde";
+            else greeting = "Boa noite";
+
+            // Tenta pegar o nome do usuário
+            const profile = JSON.parse(localStorage.getItem('flowlife_profile'));
+            const name = profile && profile.nome ? profile.nome.split(' ')[0] : "";
+            
+            document.getElementById('greeting').textContent = `${greeting}${name ? ', ' + name : ''}!`;
+
+            // Atualiza data por extenso
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('pt-BR', options);
+        }
+        updateGreeting();
+
+        // --- 3. CARREGAMENTO DE DADOS (LocalStorage) ---
+        const DOM = {
+            foco: document.getElementById('foco-content'),
+            agenda: document.getElementById('agenda-content'),
+            financas: document.getElementById('financas-content'),
+            moodBtns: document.querySelectorAll('.mood-btn')
+        };
+
+        function renderFoco() {
+            const plan = JSON.parse(localStorage.getItem('flowlife_plan'));
+            if (!plan || !plan.totals) {
+                DOM.foco.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list" style="font-size:2rem; opacity:0.5; margin-bottom: 10px;"></i><p>Seu plano ainda não foi gerado.</p><a href="quiz.html" class="empty-btn">Criar Plano</a></div>`;
+                return;
+            }
+            // Lógica simples para determinar foco principal
+            const totals = plan.totals;
+            const primaryFocus = Object.keys(totals).sort((a, b) => totals[b] - totals[a])[0];
+            const focusData = {
+                saude: { title: "Movimente-se", icon: "💪", desc: "Sua prioridade é saúde. Que tal uma caminhada de 20min hoje?" },
+                financas: { title: "Controle Gastos", icon: "💰", desc: "Foco financeiro. Revise suas transações de hoje." },
+                organizacao: { title: "Planeje o Dia", icon: "🧠", desc: "Organização é chave. Defina suas 3 tarefas principais." }
+            };
+            const focus = focusData[primaryFocus] || focusData.organizacao;
+
+            DOM.foco.innerHTML = `
+                <div class="foco-highlight">${focus.icon} ${focus.title}</div>
+                <p class="foco-desc">${focus.desc}</p>
+            `;
+        }
+
+        function renderAgenda() {
+            const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const todayKey = weekDays[new Date().getDay()];
+            const allTasks = JSON.parse(localStorage.getItem('flowlife_weeklyTasks')) || {};
+            
+            // Filtra tarefas de hoje e ordena por horário
+            const todayTasks = Object.entries(allTasks)
+                .filter(([key]) => key.startsWith(todayKey))
+                .sort((a, b) => a[0].split('_')[2].localeCompare(b[0].split('_')[2]))
+                .slice(0, 3); // Mostra apenas as 3 primeiras para economizar espaço
+
+            if (todayTasks.length === 0) {
+                DOM.agenda.innerHTML = `<div class="empty-state"><p>Nada agendado para hoje.</p><a href="agenda.html" class="empty-btn">Adicionar Tarefa</a></div>`;
+                return;
+            }
+
+            let html = '<ul class="task-list">';
+            todayTasks.forEach(([key]) => {
+                const [, name, time] = key.split('_');
+                html += `<li class="task-item"><span class="task-time">${time}</span><span class="task-name">${name}</span></li>`;
+            });
+            html += '</ul>';
+            if (Object.entries(allTasks).filter(([key]) => key.startsWith(todayKey)).length > 3) {
+                 html += `<div style="text-align:center; margin-top:15px;"><a href="agenda.html" style="font-size:0.9rem; color:var(--accent-green); text-decoration:none; font-weight:500;">Ver todas →</a></div>`
+            }
+            DOM.agenda.innerHTML = html;
+        }
+
+        function renderFinancas() {
+            const transactions = JSON.parse(localStorage.getItem('flowlife_transactions')) || [];
+            if (transactions.length === 0) {
+                DOM.financas.innerHTML = `<div class="empty-state"><p>Sem dados financeiros este mês.</p><a href="financas.html" class="empty-btn">Registrar</a></div>`;
+                return;
+            }
+            const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+            const expense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+            const balance = income - expense;
+            const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+            DOM.financas.innerHTML = `
+                <div class="finance-summary">
+                    <div class="finance-item">
+                        <div class="value income">${format(income)}</div>
+                        <div class="label">Entradas</div>
+                    </div>
+                    <div class="finance-item">
+                        <div class="value expense">${format(expense)}</div>
+                        <div class="label">Saídas</div>
+                    </div>
+                </div>
+                <div class="finance-balance">
+                    <div style="font-size: 1.1rem; color: var(--text-secondary);">Saldo do Período</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: ${balance >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${format(balance)}</div>
+                </div>
+            `;
+        }
+
+        function setupMood() {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const savedMood = JSON.parse(localStorage.getItem('flowlife_mood'));
+
+            if (savedMood && savedMood.date === todayStr) {
+                const btn = document.querySelector(`.mood-btn[data-mood="${savedMood.mood}"]`);
+                if (btn) btn.classList.add('selected');
+            }
+
+            DOM.moodBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    DOM.moodBtns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    localStorage.setItem('flowlife_mood', JSON.stringify({ mood: btn.dataset.mood, date: todayStr }));
+                });
+            });
+        }
+
+        renderFoco();
+        renderAgenda();
+        renderFinancas();
+        setupMood();
+    });
+    </script>
+</body>
+</html>

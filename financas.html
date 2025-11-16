@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlowLife — Dashboard Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="firebase-init.js" defer></script>
+<script src="auth-guard.js" defer></script>
+<style>
+  :root {
+    --bg-primary: #0f1115;
+    --bg-secondary: #1c2026;
+    --bg-tertiary: #252a31;
+    --text-primary: #f5f5f5;
+    --text-secondary: #bdbdbd;
+    --accent-blue: #2196F3;
+    --accent-green: #4caf50;
+    --accent-red: #e53935;
+    --accent-yellow: #FFC107;
+  }
+
+  body.modal-open { overflow: hidden; }
+
+  /* Reset e estilos globais */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Poppins', sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow-x:hidden; }
+  .container { max-width:1400px; margin:0 auto; padding:24px; }
+
+  header { text-align:center; margin-bottom:32px; }
+  header h1 { font-size:2.5rem; }
+  header p { color: var(--text-secondary); font-size:1.1rem; }
+:root { --scroll-behavior: smooth; } * { margin:0; padding:0; box-sizing:border-box; } body { font-family:'Poppins', sans-serif; background:#0f1115; color:#f5f5f5; overflow-x:hidden; scroll-behavior:var(--scroll-behavior); } a { text-decoration:none; color:inherit; } nav { position:fixed; top:0; left:0; width:100%; backdrop-filter:blur(10px); background:rgba(15,17,21,0.85); 
+    box-shadow:0 1px 8px rgba(0,0,0,0.3); z-index:100; } /* =======================================================
+       🧭 NAVEGAÇÃO (PADRÃO PARA TODAS AS PÁGINAS)
+       ======================================================= */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height);
+      backdrop-filter: blur(10px); background: rgba(15, 17, 21, 0.85);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3); z-index: 100;
+    }
+    .nav-container {
+      max-width: 1200px; margin: auto; height: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 2rem;
+    }
+    .nav-logo {
+      font-size: 1.5rem; font-weight: 700; color: var(--accent-green);
+      letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+    }
+    .nav-menu { display: flex; gap: 1.5rem; }
+    .nav-menu a {
+      color: #e0e0e0; font-size: 0.95rem; font-weight: 500;
+      position: relative; transition: color 0.3s ease;
+    }
+    .nav-menu a::after {
+      content: ""; position: absolute; width: 0%; height: 2px;
+      bottom: -4px; left: 0; background-color: var(--accent-green);
+      transition: width 0.3s;
+    }
+    .nav-menu a:hover, .nav-menu a.active { color: var(--accent-green); }
+    .nav-menu a:hover::after, .nav-menu a.active::after { width: 100%; }
+
+  .dashboard { display:grid; grid-template-columns: repeat(4,1fr); grid-template-areas:
+    "summary-income summary-expense summary-balance quick-add"
+    "chart chart transactions transactions"
+    "chart chart transactions transactions";
+    gap:24px;
+  }
+
+  .card { background: var(--bg-secondary); padding:24px; border-radius:16px; box-shadow:0 8px 35px rgba(0,0,0,0.4); animation:fadeIn 0.6s ease-out forwards; opacity:0; }
+  .card-title { display:flex; align-items:center; font-size:1rem; font-weight:500; color: var(--text-secondary); margin-bottom:12px; }
+  .card-title svg { width:20px; height:20px; margin-right:8px; }
+  .card-value { font-size:2.2rem; font-weight:600; }
+
+  #summary-income { grid-area: summary-income; }
+  #summary-income .card-value { color: var(--accent-green); }
+  #summary-expense { grid-area: summary-expense; }
+  #summary-expense .card-value { color: var(--accent-red); }
+  #summary-balance { grid-area: summary-balance; }
+
+  #quick-add { grid-area: quick-add; background:transparent; border:2px dashed #333; display:flex; justify-content:center; align-items:center; cursor:pointer; transition: all 0.3s ease; }
+  #quick-add:hover { background: var(--bg-tertiary); border-color: var(--accent-blue); }
+  #add-transaction-btn { display:flex; flex-direction:column; align-items:center; gap:8px; font-size:1.1rem; font-weight:500; color: var(--text-primary); }
+  #add-transaction-btn svg { width:40px; height:40px; stroke: var(--accent-blue); }
+
+  #chart-card { grid-area: chart; height:300px; }
+  #transactions-card { grid-area: transactions; }
+
+  #transaction-list { list-style:none; max-height:400px; overflow-y:auto; padding-right:10px; }
+  .transaction-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--bg-tertiary); }
+  .transaction-item:last-child { border:none; }
+  .transaction-details { display:flex; align-items:center; }
+  .transaction-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-right:12px; }
+  .transaction-icon.income { background-color: rgba(76,175,80,0.2); }
+  .transaction-icon.expense { background-color: rgba(229,57,53,0.2); }
+  .transaction-category { font-weight:500; }
+  .transaction-description { font-size:0.9rem; color: var(--text-secondary); }
+  .transaction-amount-container { display:flex; align-items:center; }
+  .transaction-amount { font-weight:600; font-size:1.1rem; }
+  .transaction-amount.income { color: var(--accent-green); }
+  .transaction-amount.expense { color: var(--accent-red); }
+  .transaction-delete-btn { background:transparent; border:none; color: var(--accent-red); cursor:pointer; margin-left:12px; opacity:0; transition: opacity 0.2s, background 0.2s; padding:6px; border-radius:6px; display:flex; }
+  .transaction-item:hover .transaction-delete-btn { opacity:1; }
+  .transaction-delete-btn:hover { background: rgba(229,57,53,0.2); }
+  .transaction-delete-btn svg { width:18px; height:18px; stroke:var(--accent-red); }
+
+  .modal { position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display:flex; justify-content:center; align-items:center; z-index:1000; opacity:0; visibility:hidden; transition: all 0.3s ease; }
+  .modal.visible { opacity:1; visibility:visible; }
+  .modal-content { background: var(--bg-secondary); padding:28px; border-radius:16px; width:90%; max-width:450px; transform:scale(0.95); transition: transform 0.3s ease; }
+  .modal.visible .modal-content { transform:scale(1); }
+  .modal h3 { font-size:1.5rem; margin-bottom:20px; text-align:center; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; color: var(--text-secondary); margin-bottom:6px; font-size:0.9rem; }
+  .form-group input, .form-group select { width:100%; padding:12px; border-radius:8px; border:1px solid #444; background: var(--bg-tertiary); color: var(--text-primary); font-size:1rem; }
+  .modal-actions { display:flex; gap:12px; margin-top:24px; }
+  .modal-actions button { flex:1; padding:14px; border-radius:8px; border:none; cursor:pointer; font-size:1rem; font-weight:500; transition: all 0.2s; }
+  .modal-actions .primary { background: var(--accent-blue); color:#fff; }
+  .modal-actions .primary:hover { background:#1976D2; }
+  .modal-actions .secondary { background:#333; color:#e0e0e0; }
+  .modal-actions .secondary:hover { background:#444; }
+
+  @keyframes fadeIn { from {opacity:0; transform:scale(0.98);} to{opacity:1; transform:scale(1);} }
+</style>
+</head>
+<body>
+  <nav><div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <i class="fas fa-leaf"></i> FlowLife
+      </a>
+      <div class="nav-menu">
+        <!-- Links internos do app -->
+        <a href="dashboard.html">Dashboard</a>
+        <a href="agenda.html">Agenda</a>
+        <a href="financas.html">Finanças</a>
+        <a href="nutricao.html">Nutrição</a>
+        <!-- Perfil por último -->
+        <a href="perfil.html"><i class="far fa-user-circle"></i> Perfil</a>
+      </div>
+    </div>
+  </nav>
+<div class="container">
+  <header>
+    <h1>Dashboard Financeiro</h1>
+    <p>Sua vida financeira, organizada e sob controle.</p>
+  </header>
+  <div class="dashboard">
+    <div class="card" id="summary-income">
+      <div class="card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 11v1m-4-6h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Total de Ganhos</div>
+      <div class="card-value" id="total-income-value">R$ 0,00</div>
+    </div>
+    <div class="card" id="summary-expense">
+      <div class="card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg> Total de Despesas</div>
+      <div class="card-value" id="total-expense-value">R$ 0,00</div>
+    </div>
+    <div class="card" id="summary-balance">
+      <div class="card-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0 0l-3 9m12-9l-3 9"></path></svg> Saldo Atual</div>
+      <div class="card-value" id="balance-value">R$ 0,00</div>
+    </div>
+    <div class="card" id="quick-add">
+      <div id="add-transaction-btn"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Adicionar Transação</div>
+    </div>
+    <div class="card" id="chart-card">
+      <div class="card-title">Análise de Despesas</div>
+      <canvas id="expense-chart"></canvas>
+    </div>
+    <div class="card" id="transactions-card">
+      <div class="card-title-header">
+        <div class="card-title">Histórico de Transações</div>
+        <button id="clear-all-btn" title="Excluir todos os registros"><svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+      </div>
+      <ul id="transaction-list"><li class="empty-state">Nenhuma transação registrada ainda.</li></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="transaction-modal" class="modal">
+  <div class="modal-content">
+    <h3 id="modal-title">Nova Transação</h3>
+    <div class="form-group"><label for="transaction-type">Tipo de Transação</label><select id="transaction-type"><option value="expense">Despesa</option><option value="income">Receita</option></select></div>
+    <div class="form-group"><label for="transaction-category">Categoria</label><select id="transaction-category"></select></div>
+    <div class="form-group"><label for="transaction-amount">Valor</label><input type="number" id="transaction-amount" placeholder="0,00" /></div>
+    <div class="form-group"><label for="transaction-description">Descrição (Opcional)</label><input type="text" id="transaction-description" placeholder="Ex: Compra no supermercado" /></div>
+    <div class="modal-actions"><button type="button" id="cancel-btn" class="secondary">Cancelar</button><button type="button" id="save-btn" class="primary">Salvar</button></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const STORAGE_KEY = 'flowlife_transactions';
+  let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  let chartInstance = null;
+
+  const dom = {
+    totalIncome: document.getElementById('total-income-value'),
+    totalExpense: document.getElementById('total-expense-value'),
+    balance: document.getElementById('balance-value'),
+    transactionList: document.getElementById('transaction-list'),
+    chartCanvas: document.getElementById('expense-chart').getContext('2d'),
+    modal: document.getElementById('transaction-modal'),
+    openModalBtn: document.getElementById('quick-add'),
+    saveBtn: document.getElementById('save-btn'),
+    cancelBtn: document.getElementById('cancel-btn'),
+    typeSelect: document.getElementById('transaction-type'),
+    categorySelect: document.getElementById('transaction-category'),
+    amountInput: document.getElementById('transaction-amount'),
+    descriptionInput: document.getElementById('transaction-description'),
+    clearAllBtn: document.getElementById('clear-all-btn')
+  };
+
+  const categories = {
+    income: ['Salário', 'Renda Extra', 'Investimentos', 'Outros'],
+    expense: ['Moradia', 'Alimentação', 'Transporte', 'Lazer', 'Saúde', 'Educação', 'Outros']
+  };
+
+  const formatCurrency = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Math.abs(v));
+
+  const saveData = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+
+  const updateCategoryOptions = () => {
+    const type = dom.typeSelect.value;
+    dom.categorySelect.innerHTML = categories[type].map(c => `<option value="${c}">${c}</option>`).join('');
+  };
+
+  const renderTransactionList = () => {
+    dom.transactionList.innerHTML = '';
+    if (!transactions.length) {
+      dom.transactionList.innerHTML = '<li class="empty-state">Nenhuma transação registrada.</li>'; 
+      return;
+    }
+    [...transactions].sort((a,b)=>b.id-a.id).forEach(t => {
+      const li = document.createElement('li');
+      li.className='transaction-item'; li.dataset.id=t.id;
+      const isIncome = t.type==='income';
+      li.innerHTML = `
+        <div class="transaction-details">
+          <div class="transaction-icon ${isIncome?'income':'expense'}">
+            <svg fill="${isIncome?'var(--accent-green)':'var(--accent-red)'}" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm${isIncome?'.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414l-3-3z':'.707-7.707a1 1 0 001.414 1.414l3-3a1 1 0 00-1.414-1.414L11 10.586V7a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3z'}" clip-rule="evenodd"></path></svg>
+          </div>
+          <div>
+            <div class="transaction-category">${t.category}</div>
+            <div class="transaction-description">${t.description||''}</div>
+          </div>
+        </div>
+        <div class="transaction-amount-container">
+          <div class="transaction-amount ${isIncome?'income':'expense'}">${isIncome?'+':'-'} ${formatCurrency(t.amount)}</div>
+          <button class="transaction-delete-btn" data-id="${t.id}" title="Excluir Transação">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      `;
+      dom.transactionList.appendChild(li);
+    });
+  };
+
+  const renderDashboard = () => {
+    const income = transactions.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+    const expense = transactions.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
+    const balance = income-expense;
+
+    dom.totalIncome.textContent=formatCurrency(income);
+    dom.totalExpense.textContent=formatCurrency(expense);
+    dom.balance.textContent=formatCurrency(balance);
+    dom.balance.style.color = balance>=0?'var(--accent-green)':'var(--accent-red)';
+
+    renderTransactionList();
+    renderChart();
+  };
+
+  const renderChart = () => {
+    const expenseData = transactions.filter(t=>t.type==='expense').reduce((acc,t)=>{acc[t.category]=(acc[t.category]||0)+t.amount;return acc;},{});
+    const labels = Object.keys(expenseData);
+    const data = Object.values(expenseData);
+
+    if(chartInstance){chartInstance.destroy(); chartInstance=null;}
+    if(!labels.length) return;
+
+    const centerTextPlugin = {
+      id:'centerText',
+      beforeDraw:chart=>{
+        const ctx = chart.ctx, w=chart.width,h=chart.height;
+        ctx.restore();
+        const total = data.reduce((a,b)=>a+b,0);
+        if(total===0) return;
+        ctx.font='400 12px Poppins, sans-serif'; ctx.fillStyle='var(--text-secondary)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('Total Gasto',w/2,h/2-10);
+        ctx.font='600 24px Poppins, sans-serif'; ctx.fillStyle='var(--text-primary)';
+        ctx.fillText(formatCurrency(total),w/2,h/2+20);
+        ctx.save();
+      }
+    };
+
+    chartInstance = new Chart(dom.chartCanvas,{type:'doughnut',data:{labels, datasets:[{data, backgroundColor:['#2196F3','#FFC107','#4CAF50','#F44336','#9C27B0','#FF9800','#00BCD4'], borderColor:'var(--bg-secondary)', borderWidth:4}]}, options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{position:'bottom',labels:{color:'var(--text-primary)', font:{size:14}}}}, cutout:'70%'}, plugins:[centerTextPlugin]});
+  };
+
+  const openModal = ()=>{ dom.modal.classList.add('visible'); document.body.classList.add('modal-open'); updateCategoryOptions(); };
+  const closeModal = ()=>{ dom.modal.classList.remove('visible'); document.body.classList.remove('modal-open'); dom.amountInput.value=''; dom.descriptionInput.value=''; dom.typeSelect.value='expense'; updateCategoryOptions(); };
+  const saveTransaction = ()=>{
+    const type = dom.typeSelect.value;
+    const category = dom.categorySelect.value;
+    const amount = Math.abs(parseFloat(dom.amountInput.value));
+    const description = dom.descriptionInput.value.trim();
+    if(isNaN(amount)||amount<=0){ alert('Por favor, insira um valor válido e positivo.'); return; }
+    transactions.push({id:Date.now(), type, category, amount, description});
+    saveData(); renderDashboard(); closeModal();
+  };
+
+  const deleteTransaction = id=>{
+    if(confirm('Tem certeza que deseja excluir esta transação?')){
+      transactions = transactions.filter(t=>t.id!==Number(id));
+      saveData(); renderDashboard();
+    }
+  };
+
+  const clearAllTransactions = ()=>{
+    if(!transactions.length){ alert('Não há transações para excluir.'); return; }
+    if(confirm('Deseja excluir *todas* as transações?')){ transactions=[]; saveData(); renderDashboard(); alert('Todas as transações foram excluídas.'); }
+  };
+
+  // Eventos
+  dom.openModalBtn.addEventListener('click', openModal);
+  dom.cancelBtn.addEventListener('click', closeModal);
+  dom.modal.addEventListener('click',e=>{ if(e.target===dom.modal) closeModal(); });
+  dom.typeSelect.addEventListener('change', updateCategoryOptions);
+  dom.saveBtn.addEventListener('click', saveTransaction);
+  dom.clearAllBtn.addEventListener('click', clearAllTransactions);
+  dom.transactionList.addEventListener('click', e=>{
+    const btn = e.target.closest('.transaction-delete-btn');
+    if(btn) deleteTransaction(btn.dataset.id);
+  });
+
+  updateCategoryOptions();
+  renderDashboard();
+});
+</script>
+</body>
+</html>

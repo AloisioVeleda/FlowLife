@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowLife — Nutrição e Saúde</title>
+
+    <!-- Scripts do Firebase e Auth Guard -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="auth-guard.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <style>
+         /* =======================================================
+       🌿 VARIÁVEIS E GLOBAIS
+       ======================================================= */
+     /* =======================================================
+       🌿 VARIÁVEIS E GLOBAIS
+       ======================================================= */
+    :root {
+      --scroll-behavior: smooth;
+      --accent-green: #4caf50;
+      --accent-blue: #2196F3; /* Adicionada para o gradiente */
+      --bg-primary: #0f1115;
+      --bg-secondary: #15181d;
+      --bg-card: #1c2026;
+      --text-primary: #f5f5f5;
+      --text-secondary: #bdbdbd;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      scroll-behavior: var(--scroll-behavior);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* =======================================================
+       🌿 BARRA DE NAVEGAÇÃO FIXA (NAV)
+       ======================================================= */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      background: rgba(15, 17, 21, 0.85);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+    }
+
+    .nav-logo {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent-green);
+      letter-spacing: 1px;
+      transition: transform 0.3s;
+    }
+
+    .nav-logo:hover {
+      transform: scale(1.05);
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .nav-menu a {
+      color: #e0e0e0;
+      font-weight: 500;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    .nav-menu a::after {
+      content: "";
+      position: absolute;
+      width: 0%;
+      height: 2px;
+      bottom: -5px;
+      left: 0;
+      background-color: var(--accent-green);
+      transition: width 0.3s;
+    }
+
+    .nav-menu a:hover {
+      color: var(--accent-green);
+    }
+
+    .nav-menu a:hover::after {
+      width: 100%;
+    }
+
+    /* =======================================================
+       🌿 BARRA DE NAVEGAÇÃO FIXA (NAV)
+       ======================================================= */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      background: rgba(15, 17, 21, 0.85);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+
+        /* --- Barra de Navegação (Reutilizada) --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: var(--nav-height);
+            backdrop-filter: blur(10px); background: rgba(15,17,21,0.85);
+            box-shadow: 0 1px 8px rgba(0,0,0,0.3); z-index: 100; padding: 0 2rem;
+        }
+        .nav-container {
+            
+          max-width: 1400px; margin: auto; display: flex;
+            justify-content: space-between; align-items: center; height: 100%;
+        }
+        .nav-left { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-logo { font-size: 1.8rem; font-weight: 700; color: var(--accent-green); }
+        .nav-user-profile { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border-radius: 50px; background: var(--bg-tertiary); }
+        .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-green); color: var(--bg-primary); display: grid; place-items: center; font-size: 1.6rem; line-height: 1; font-weight: 700; overflow: hidden; }
+        .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .nav-user-name { font-weight: 500; color: var(--text-primary); }
+       
+    /* =======================================================
+       🌿 BARRA DE NAVEGAÇÃO FIXA (NAV)
+       ======================================================= */
+    
+
+
+        /* --- Conteúdo Principal --- */
+        .container {
+          
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .card {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 35px rgba(0, 0, 0, 0.4);
+        }
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--accent-green);
+        }
+
+        /* --- Card de Metas Diárias --- */
+        .metas-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        .meta-item {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .meta-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--accent-yellow);
+        }
+        .meta-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .btn-recalcular {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background: var(--accent-blue); color: white; font-weight: 500;
+            font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 20px;
+        }
+        .btn-recalcular:hover { background: #1e88e5; }
+        #loading-text {
+            color: var(--text-secondary); text-align: center;
+            font-style: italic; margin-top: 15px;
+        }
+
+        /* --- Card de Diário Alimentar --- */
+        .refeicao { margin-bottom: 20px; }
+        .refeicao-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--bg-tertiary);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .refeicao-header h4 { font-size: 1.1rem; color: var(--text-primary); }
+        .btn-add-food {
+            background: var(--accent-green); color: white; border: none;
+            border-radius: 50%; width: 28px; height: 28px; font-size: 1.5rem;
+            cursor: pointer; line-height: 24px; transition: transform 0.2s;
+        }
+        .btn-add-food:hover { transform: scale(1.1); }
+        
+        .food-list { list-style: none; color: var(--text-secondary); }
+        .food-item {
+            display: flex; justify-content: space-between;
+            padding: 6px 0; font-size: 0.95rem;
+        }
+        .food-item span:first-child { font-weight: 500; color: var(--text-primary); }
+        
+        /* --- Responsividade --- */
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .nav-menu { display: none; }
+            .nav-container { padding: 0 1rem; }
+        }
+        @media (max-width: 600px) {
+            .nav-user-name { display: none; }
+        }
+
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-container">
+      <a href="#inicio" class="nav-logo">FlowLife</a>
+      <div class="nav-menu">
+        <a href="perfil.html">Meu Perfil</a>
+        <a href="plano.html">Meu Plano</a>
+        <a href="agenda.html">Agenda</a>
+        <a href="financas.html">Finanças</a>
+        <a href="nutricao.html">Nutrição</a>
+        <a href="dashboard.html">Meu Painel</a>
+      </div>
+    </div>
+  </nav><br><br><br>
+
+<div class="container">
+    <!-- Coluna Esquerda: Metas e Calculadora -->
+    <div class="card" id="metas-diarias">
+        <h3 class="card-title">🍎 Suas Metas Diárias</h3>
+        <p style="color:var(--text-secondary); margin-bottom: 20px;">
+            Calculado com base nos dados do seu perfil (peso, altura, nível de atividade).
+        </p>
+        <div class="metas-grid">
+            <div class="meta-item">
+                <div class="meta-value" id="meta-calorias">...</div>
+                <div class="meta-label">Calorias (kcal)</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-value" id="meta-proteinas">...</div>
+                <div class="meta-label">Proteínas (g)</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-value" id="meta-carboidratos">...</div>
+                <div class="meta-label">Carboidratos (g)</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-value" id="meta-gorduras">...</div>
+                <div class="meta-label">Gorduras (g)</div>
+            </div>
+        </div>
+        <p id="loading-text">Carregando dados do perfil para calcular...</p>
+        <button class="btn-recalcular" id="recalcular-btn">Recalcular Metas</button>
+    </div>
+
+    <!-- Coluna Direita: Diário Alimentar -->
+    <div class="card" id="diario-alimentar">
+        <h3 class="card-title">🥗 Diário Alimentar de Hoje</h3>
+        
+        <div class="refeicao">
+            <div class="refeicao-header">
+                <h4>Café da Manhã</h4>
+                <button class="btn-add-food" data-refeicao="cafe"> + </button>
+            </div>
+            <ul class="food-list" id="list-cafe">
+                <!-- Itens adicionados via JS -->
+            </ul>
+        </div>
+
+        <div class="refeicao">
+            <div class="refeicao-header">
+                <h4>Almoço</h4>
+                <button class="btn-add-food" data-refeicao="almoco"> + </button>
+            </div>
+            <ul class="food-list" id="list-almoco">
+                <li class="food-item"><span>Arroz e Feijão</span> <span>350 kcal</span></li>
+            </ul>
+        </div>
+        
+        <div class="refeicao">
+            <div class="refeicao-header">
+                <h4>Jantar</h4>
+                <button class="btn-add-food" data-refeicao="jantar"> + </button>
+            </div>
+            <ul class="food-list" id="list-jantar"></ul>
+        </div>
+
+        <div class="refeicao">
+            <div class="refeicao-header">
+                <h4>Lanches</h4>
+                <button class="btn-add-food" data-refeicao="lanches"> + </button>
+            </div>
+            <ul class="food-list" id="list-lanches"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    let userId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const DOM = {
+            navAvatar: document.getElementById('nav-avatar'),
+            navUserName: document.getElementById('nav-user-name'),
+            metaCalorias: document.getElementById('meta-calorias'),
+            metaProteinas: document.getElementById('meta-proteinas'),
+            metaCarboidratos: document.getElementById('meta-carboidratos'),
+            metaGorduras: document.getElementById('meta-gorduras'),
+            loadingText: document.getElementById('loading-text'),
+            recalcularBtn: document.getElementById('recalcular-btn'),
+        };
+
+        const PROFILE_DOC_PATH = (uid) => `artifacts/${appId}/users/${uid}/profile/basic`;
+
+        // ============================================
+        // 🌿 CARREGAR PERFIL (Nav e Calculadora)
+        // ============================================
+        async function loadProfileData(uid) {
+            if (!uid) return;
+            try {
+                const docRef = firebase.firestore().doc(PROFILE_DOC_PATH(uid));
+                const docSnap = await docRef.get();
+
+                if (!docSnap.exists) {
+                    DOM.loadingText.textContent = "Perfil não encontrado. Por favor, complete seu perfil.";
+                    DOM.loadingText.style.color = "var(--accent-red)";
+                    return;
+                }
+                
+                const data = docSnap.data();
+                
+                // 1. Atualiza Nav
+                const nome = data.nome ? data.nome.split(' ')[0] : "Usuário";
+                DOM.navUserName.textContent = nome;
+                if (data.fotoURL) {
+                    DOM.navAvatar.innerHTML = `<img src="${data.fotoURL}" alt="Foto de ${nome}">`;
+                } else {
+                    DOM.navAvatar.innerHTML = '🌸';
+                }
+
+                // 2. Calcula Metas Nutricionais
+                calcularMetas(data);
+
+            } catch (error) {
+                console.error("Erro ao carregar perfil:", error);
+                DOM.loadingText.textContent = "Erro ao carregar dados.";
+            }
+        }
+
+        /**
+         * Calcula Metas Nutricionais (Fórmula de Harris-Benedict Simples)
+         * Esta é uma simulação de frontend. O ideal é usar uma API (como a do Gemini)
+         * para sugestões mais inteligentes.
+         */
+        function calcularMetas(profile) {
+            const { altura, peso, genero, atividade } = profile;
+
+            if (!altura || !peso || !genero || !atividade) {
+                DOM.loadingText.textContent = "Complete seu perfil (altura, peso, gênero, atividade) para calcular as metas.";
+                DOM.metaCalorias.textContent = "N/A";
+                DOM.metaProteinas.textContent = "N/A";
+                DOM.metaCarboidratos.textContent = "N/A";
+                DOM.metaGorduras.textContent = "N/A";
+                return;
+            }
+
+            // Fator de Atividade (TMB)
+            const fatoresAtividade = {
+                sedentario: 1.2,
+                leve: 1.375,
+                moderado: 1.55,
+                alto: 1.725,
+                atleta: 1.9
+            };
+            const tmb = fatoresAtividade[atividade] || 1.375;
+
+            // TMB (Harris-Benedict simplificado, usando 22 kcal/kg como base)
+            // Esta é uma estimativa MUITO simples.
+            const baseKcal = (peso * 22); 
+            const calorias = Math.round(baseKcal * tmb);
+            
+            // Macros (Distribuição 40% C / 30% P / 30% G)
+            const proteinas = Math.round((calorias * 0.30) / 4);
+            const carboidratos = Math.round((calorias * 0.40) / 4);
+            const gorduras = Math.round((calorias * 0.30) / 9);
+
+            // Atualiza a UI
+            DOM.metaCalorias.textContent = calorias;
+            DOM.metaProteinas.textContent = proteinas;
+            DOM.metaCarboidratos.textContent = carboidratos;
+            DOM.metaGorduras.textContent = gorduras;
+            DOM.loadingText.style.display = 'none';
+        }
+
+
+        // ============================================
+        // 🚀 INICIALIZAÇÃO
+        // ============================================
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                userId = user.uid;
+                loadProfileData(userId);
+            }
+        });
+
+        // Evento do botão (apenas recarrega os dados)
+        DOM.recalcularBtn.addEventListener('click', () => {
+            DOM.loadingText.style.display = 'block';
+            DOM.loadingText.textContent = 'Recalculando...';
+            loadProfileData(userId);
+        });
+
+    });
+</script>
+
+</body>
+</html>
